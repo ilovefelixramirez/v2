@@ -13,8 +13,8 @@
         --muted: rgba(10, 12, 18, 0.58);
         --button-bg: rgba(255, 255, 255, 0.24);
         --button-active: rgba(10, 12, 18, 0.06);
-        --scope: #58d68d;
-        --scope-glow: rgba(88, 214, 141, 0.28);
+        --scope: #4a5d23;
+        --scope-glow: rgba(74, 93, 35, 0.24);
       }
 
       * {
@@ -35,11 +35,13 @@
       }
 
       .embed-shell {
-        min-height: 100vh;
-        width: 100%;
+        width: 1710.08px;
+        height: 851.7px;
+        max-width: 100%;
         display: grid;
         grid-template-rows: minmax(0, 1fr) auto;
         background: var(--page);
+        overflow: hidden;
       }
 
       .stage {
@@ -145,15 +147,15 @@
       ];
 
       const VISUALIZER_CONFIG = {
-        radiusScale: 1.24,
+        radiusScale: 1.18,
         offsetX: 0,
-        offsetY: -0.02,
-        wordScale: 1.34,
+        offsetY: -0.05,
+        wordScale: 1.24,
         pointSizeBase: 2.0,
         pointSizeEnergyBoost: 0.36,
         pointCount: 3024,
         textSpacing: 14,
-        textVerticalNudge: -10,
+        textVerticalNudge: -34,
       };
 
       const canvas = document.getElementById("visualizer-canvas");
@@ -313,13 +315,13 @@
         textCtx.lineCap = "round";
 
         const displayWord = word.trim().toUpperCase();
-        let size = Math.min(280, textCanvas.width * 0.22);
+        let size = Math.min(260, textCanvas.width * 0.2);
         let metrics = buildGlyphMetrics(displayWord, size, spacing);
 
         while (
-          size > 46 &&
-          (metrics.totalWidth > textCanvas.width * 0.76 ||
-            metrics.maxAscent + metrics.maxDescent > textCanvas.height * 0.42)
+          size > 40 &&
+          (metrics.totalWidth > textCanvas.width * 0.74 ||
+            metrics.maxAscent + metrics.maxDescent > textCanvas.height * 0.34)
         ) {
           size -= 8;
           metrics = buildGlyphMetrics(displayWord, size, spacing);
@@ -332,7 +334,7 @@
 
         const startX = (textCanvas.width - metrics.totalWidth) * 0.5;
         const baselineY =
-          textCanvas.height * 0.52 +
+          textCanvas.height * 0.47 +
           (metrics.maxAscent - metrics.maxDescent) * 0.5 +
           VISUALIZER_CONFIG.textVerticalNudge;
 
@@ -465,8 +467,8 @@
         }
 
         const centerX = canvas.width * (0.5 + VISUALIZER_CONFIG.offsetX);
-        const centerY = canvas.height * (0.48 + VISUALIZER_CONFIG.offsetY);
-        const radius = Math.min(canvas.width, canvas.height) * 0.34 * VISUALIZER_CONFIG.radiusScale;
+        const centerY = canvas.height * (0.45 + VISUALIZER_CONFIG.offsetY);
+        const radius = Math.min(canvas.width, canvas.height) * 0.32 * VISUALIZER_CONFIG.radiusScale;
 
         ctx.save();
         ctx.translate(centerX, centerY);
