@@ -142,20 +142,28 @@
           word: "DICHOTOMY",
           src: "https://res.cloudinary.com/dxqdhd3ec/video/upload/v1777865192/Dichotomy_cxauj8.wav",
         },
-        { title: "Track Two", word: "TRACK TWO", src: "./track-2.mp3" },
-        { title: "Track Three", word: "TRACK THREE", src: "./track-3.mp3" },
+        {
+          title: "Auspicious",
+          word: "AUSPICIOUS",
+          src: "https://res.cloudinary.com/dxqdhd3ec/video/upload/v1777867487/big_song_final_lmxlwg.wav",
+        },
+        {
+          title: "Snail Race",
+          word: "SNAIL RACE",
+          src: "https://res.cloudinary.com/dxqdhd3ec/video/upload/v1777867439/Felix_Seren_Hugo_-_Snail_Race_Completed_Real_Final_aylzls.wav",
+        },
       ];
 
       const VISUALIZER_CONFIG = {
-        radiusScale: 1.18,
+        radiusScale: 4.72,
         offsetX: 0,
-        offsetY: -0.05,
-        wordScale: 1.24,
-        pointSizeBase: 2.0,
-        pointSizeEnergyBoost: 0.36,
+        offsetY: 0.34,
+        wordScale: 1.02,
+        pointSizeBase: 1.72,
+        pointSizeEnergyBoost: 0.3,
         pointCount: 3024,
         textSpacing: 14,
-        textVerticalNudge: -34,
+        textVerticalNudge: -88,
       };
 
       const canvas = document.getElementById("visualizer-canvas");
@@ -315,15 +323,15 @@
         textCtx.lineCap = "round";
 
         const displayWord = word.trim().toUpperCase();
-        let size = Math.min(260, textCanvas.width * 0.2);
+        let size = Math.min(220, textCanvas.width * 0.16);
         let metrics = buildGlyphMetrics(displayWord, size, spacing);
 
         while (
-          size > 40 &&
-          (metrics.totalWidth > textCanvas.width * 0.74 ||
-            metrics.maxAscent + metrics.maxDescent > textCanvas.height * 0.34)
+          size > 34 &&
+          (metrics.totalWidth > textCanvas.width * 0.68 ||
+            metrics.maxAscent + metrics.maxDescent > textCanvas.height * 0.24)
         ) {
-          size -= 8;
+          size -= 6;
           metrics = buildGlyphMetrics(displayWord, size, spacing);
         }
 
@@ -334,52 +342,85 @@
 
         const startX = (textCanvas.width - metrics.totalWidth) * 0.5;
         const baselineY =
-          textCanvas.height * 0.47 +
+          textCanvas.height * 0.37 +
           (metrics.maxAscent - metrics.maxDescent) * 0.5 +
           VISUALIZER_CONFIG.textVerticalNudge;
 
+        const bottomEdge = baselineY + metrics.maxDescent + textCtx.lineWidth;
+        const safeBottom = textCanvas.height * 0.42;
+        const adjustedBaselineY =
+          bottomEdge > safeBottom ? baselineY - (bottomEdge - safeBottom) : baselineY;
+
         let cursor = startX;
         metrics.glyphs.forEach((glyph, index) => {
-          textCtx.strokeText(glyph.char, cursor, baselineY);
-          textCtx.fillText(glyph.char, cursor, baselineY);
+          textCtx.strokeText(glyph.char, cursor, adjustedBaselineY);
+          textCtx.fillText(glyph.char, cursor, adjustedBaselineY);
           cursor += glyph.width + (index < metrics.glyphs.length - 1 ? spacing : 0);
         });
 
         const imageData = textCtx.getImageData(0, 0, textCanvas.width, textCanvas.height).data;
-        const points = [];
-        const step =
-          displayWord.length >= 10 ? 4 : displayWord.length >= 6 ? 5 : 6;
-        const neighborStride = Math.max(2, Math.floor(step * 0.75));
 
-        for (let y = 0; y < textCanvas.height; y += step) {
-          for (let x = 0; x < textCanvas.width; x += step) {
-            if (!filledAt(imageData, textCanvas.width, textCanvas.height, x, y)) {
-              continue;
-            }
+        function collectPoints(step) {
+          const points = [];
+          const neighborStride = Math.max(2, Math.floor(step * 0.75));
 
-            let filledNeighbors = 0;
-            const neighbors = [
-              [x - neighborStride, y],
-              [x + neighborStride, y],
-              [x, y - neighborStride],
-              [x, y + neighborStride],
-              [x - neighborStride, y - neighborStride],
-              [x + neighborStride, y - neighborStride],
-              [x - neighborStride, y + neighborStride],
-              [x + neighborStride, y + neighborStride],
-            ];
-            neighbors.forEach(([nx, ny]) => {
-              if (filledAt(imageData, textCanvas.width, textCanvas.height, nx, ny)) {
-                filledNeighbors += 1;
+          for (let y = 0; y < textCanvas.height; y += step) {
+            for (let x = 0; x < textCanvas.width; x += step) {
+              if (!filledAt(imageData, textCanvas.width, textCanvas.height, x, y)) {
+                continue;
               }
-            });
 
-            points.push({
-              left: ((x / textCanvas.width) * 2 - 1) * VISUALIZER_CONFIG.wordScale,
-              right: ((y / textCanvas.height) * 2 - 1) * VISUALIZER_CONFIG.wordScale * -1,
-              coreStrength: filledNeighbors / neighbors.length,
-            });
+              let filledNeighbors = 0;
+              const neighbors = [
+                [x - neighborStride, y],
+                [x + neighborStride, y],
+                [x, y - neighborStride],
+                [x, y + neighborStride],
+                [x - neighborStride, y - neighborStride],
+                [x + neighborStride, y - neighborStride],
+                [x - neighborStride, y + neighborStride],
+                [x + neighborStride, y + neighborStride],
+              ];
+              neighbors.forEach(([nx, ny]) => {
+                if (filledAt(imageData, textCanvas.width, textCanvas.height, nx, ny)) {
+                  filledNeighbors += 1;
+                }
+              });
+
+              points.push({
+                left: ((x / textCanvas.width) * 2 - 1) * VISUALIZER_CONFIG.wordScale,
+                right: ((y / textCanvas.height) * 2 - 1) * VISUALIZER_CONFIG.wordScale * -1,
+                coreStrength: filledNeighbors / neighbors.length,
+              });
+            }
           }
+
+          return points;
+        }
+
+        let step = displayWord.length >= 10 ? 4 : displayWord.length >= 6 ? 5 : 6;
+        let points = collectPoints(step);
+        const minimumPoints = Math.max(VISUALIZER_CONFIG.pointCount, 5200);
+
+        while (points.length < minimumPoints && step > 2) {
+          step -= 1;
+          points = collectPoints(step);
+        }
+
+        if (points.length < minimumPoints && points.length > 0) {
+          const densified = [];
+          const copiesNeeded = Math.ceil(minimumPoints / points.length);
+          for (let copy = 0; copy < copiesNeeded; copy += 1) {
+            for (let index = 0; index < points.length; index += 1) {
+              const point = points[index];
+              densified.push({
+                left: point.left + ((copy % 3) - 1) * 0.0024,
+                right: point.right + ((Math.floor(copy / 3) % 3) - 1) * 0.0024,
+                coreStrength: point.coreStrength,
+              });
+            }
+          }
+          points = densified.slice(0, minimumPoints);
         }
 
         return points;
@@ -421,7 +462,7 @@
           return { points: [], energy: 0 };
         }
 
-        const density = VISUALIZER_CONFIG.pointCount;
+        const density = Math.max(VISUALIZER_CONFIG.pointCount, state.wordPoints.length);
         const leftChannel = state.audioBuffer.getChannelData(0);
         const rightChannel =
           state.audioBuffer.numberOfChannels > 1
@@ -468,7 +509,7 @@
 
         const centerX = canvas.width * (0.5 + VISUALIZER_CONFIG.offsetX);
         const centerY = canvas.height * (0.45 + VISUALIZER_CONFIG.offsetY);
-        const radius = Math.min(canvas.width, canvas.height) * 0.32 * VISUALIZER_CONFIG.radiusScale;
+        const radius = Math.min(canvas.width, canvas.height) * 0.08 * VISUALIZER_CONFIG.radiusScale;
 
         ctx.save();
         ctx.translate(centerX, centerY);
