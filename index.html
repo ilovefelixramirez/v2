@@ -6,12 +6,15 @@
     <title>Embeddable Vectoroscope</title>
     <style>
       :root {
-        color-scheme: dark;
-        --bg: #08080b;
-        --panel: rgba(255, 255, 255, 0.04);
-        --border: rgba(255, 255, 255, 0.11);
-        --text: #f1f1ec;
-        --muted: #979792;
+        color-scheme: light;
+        --page: #f6f2e6;
+        --border: rgba(10, 12, 18, 0.18);
+        --text: #0a0d15;
+        --muted: rgba(10, 12, 18, 0.58);
+        --button-bg: rgba(255, 255, 255, 0.24);
+        --button-active: rgba(10, 12, 18, 0.06);
+        --scope: #58d68d;
+        --scope-glow: rgba(88, 214, 141, 0.28);
       }
 
       * {
@@ -22,118 +25,110 @@
       body {
         margin: 0;
         min-height: 100%;
-        background:
-          linear-gradient(180deg, rgba(255, 255, 255, 0.015), transparent 26%),
-          linear-gradient(145deg, #0a0a0c 0%, #101015 52%, #08080b 100%);
+        background: var(--page);
         color: var(--text);
-        font-family: "SFMono-Regular", "Menlo", "Monaco", "Consolas", monospace;
+        font-family: "Times New Roman", "Iowan Old Style", "Georgia", serif;
+      }
+
+      body {
+        min-height: 100vh;
       }
 
       .embed-shell {
-        width: min(100vw, 980px);
-        margin: 0 auto;
-        padding: 18px;
+        min-height: 100vh;
+        width: 100%;
         display: grid;
-        gap: 14px;
-      }
-
-      .track-list {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 10px;
-      }
-
-      .track-button {
-        min-height: 48px;
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        background: var(--panel);
-        color: var(--text);
-        font: inherit;
-        cursor: pointer;
-        padding: 0 12px;
-        transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
-      }
-
-      .track-button:hover {
-        transform: translateY(-1px);
-        border-color: rgba(255, 255, 255, 0.26);
-      }
-
-      .track-button.is-active {
-        background: linear-gradient(135deg, rgba(241, 241, 236, 0.2), rgba(188, 188, 178, 0.1));
-        border-color: rgba(241, 241, 236, 0.42);
+        grid-template-rows: minmax(0, 1fr) auto;
+        background: var(--page);
       }
 
       .stage {
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        overflow: hidden;
-        background:
-          linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01)),
-          #09090c;
+        position: relative;
+        min-height: 0;
+        background: var(--page);
       }
 
       .canvas-frame {
         width: 100%;
-        aspect-ratio: 1 / 1;
+        height: 100%;
+        min-height: 100%;
       }
 
       canvas {
         width: 100%;
         height: 100%;
         display: block;
+        background: var(--page);
       }
 
-      .meta {
+      .track-list {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) auto;
-        gap: 8px;
-        align-items: center;
-        padding: 12px 14px;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         border-top: 1px solid var(--border);
-        color: var(--muted);
-        font-size: 0.85rem;
+        background: var(--page);
       }
 
-      .status {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-
-      .time {
+      .track-button {
+        min-height: 76px;
+        border: 0;
+        border-right: 1px solid var(--border);
+        background: transparent;
         color: var(--text);
+        font: inherit;
+        font-size: clamp(1.4rem, 2.2vw, 2.4rem);
+        line-height: 1;
+        cursor: pointer;
+        padding: 18px 16px 20px;
+        transition: background 140ms ease, color 140ms ease, opacity 140ms ease;
+      }
+
+      .track-button:last-child {
+        border-right: 0;
+      }
+
+      .track-button:hover {
+        background: var(--button-bg);
+      }
+
+      .track-button.is-active {
+        background: var(--button-active);
+      }
+
+      .track-button.is-idle {
+        opacity: 0.9;
       }
 
       audio {
         display: none;
       }
 
-      @media (max-width: 640px) {
-        .embed-shell {
-          padding: 12px;
-        }
-
+      @media (max-width: 700px) {
         .track-list {
           grid-template-columns: 1fr;
+        }
+
+        .track-button {
+          min-height: 58px;
+          font-size: 1.25rem;
+          border-right: 0;
+          border-bottom: 1px solid var(--border);
+        }
+
+        .track-button:last-child {
+          border-bottom: 0;
         }
       }
     </style>
   </head>
   <body>
     <div class="embed-shell">
-      <div class="track-list" id="track-list"></div>
-
-      <div class="stage">
+      <section class="stage">
         <div class="canvas-frame">
-          <canvas id="visualizer-canvas" width="1600" height="1600"></canvas>
+          <canvas id="visualizer-canvas" width="1600" height="1200"></canvas>
         </div>
-        <div class="meta">
-          <div class="status" id="status-text">Choose a track.</div>
-          <div class="time" id="time-text">00:00 / 00:00</div>
-        </div>
-      </div>
+      </section>
+
+      <nav class="track-list" id="track-list"></nav>
 
       <audio id="audio-player" preload="metadata" crossorigin="anonymous"></audio>
     </div>
@@ -150,20 +145,21 @@
       ];
 
       const VISUALIZER_CONFIG = {
-        radiusScale: 1.58,
+        radiusScale: 1.24,
         offsetX: 0,
-        offsetY: 0.04,
-        wordScale: 1.5,
-        pointSizeBase: 2.15,
-        pointSizeEnergyBoost: 0.45,
+        offsetY: -0.02,
+        wordScale: 1.34,
+        pointSizeBase: 2.0,
+        pointSizeEnergyBoost: 0.36,
+        pointCount: 3024,
+        textSpacing: 14,
+        textVerticalNudge: -10,
       };
 
       const canvas = document.getElementById("visualizer-canvas");
       const ctx = canvas.getContext("2d");
       const audioPlayer = document.getElementById("audio-player");
       const trackList = document.getElementById("track-list");
-      const statusText = document.getElementById("status-text");
-      const timeText = document.getElementById("time-text");
 
       const audioContext = new (window.AudioContext || window.webkitAudioContext)();
       const textCanvas = document.createElement("canvas");
@@ -183,25 +179,14 @@
 
       const PREVIEW_FRAME_INTERVAL = 1000 / 30;
 
-      function setStatus(message) {
-        statusText.textContent = message;
-      }
-
-      function formatTime(totalSeconds) {
-        if (!Number.isFinite(totalSeconds)) {
-          return "00:00";
-        }
-        const minutes = Math.floor(totalSeconds / 60);
-        const seconds = Math.floor(totalSeconds % 60);
-        return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-      }
-
       function resizeCanvases() {
-        const size = 1600;
-        canvas.width = size;
-        canvas.height = size;
-        textCanvas.width = size;
-        textCanvas.height = size;
+        const rect = canvas.getBoundingClientRect();
+        const width = Math.max(1200, Math.round(rect.width * window.devicePixelRatio || 1));
+        const height = Math.max(900, Math.round(rect.height * window.devicePixelRatio || 1));
+        canvas.width = width;
+        canvas.height = height;
+        textCanvas.width = 1600;
+        textCanvas.height = 1200;
       }
 
       function ensureAudioGraph() {
@@ -299,27 +284,45 @@
         return alpha > 20 && (red + green + blue) / 3 > 40;
       }
 
-      function sampleWordPoints(word, spacing = 12) {
+      function buildGlyphMetrics(displayWord, size, spacing) {
+        textCtx.font = `700 ${size}px Georgia`;
+        const glyphs = [...displayWord].map((char) => {
+          const metrics = textCtx.measureText(char);
+          return {
+            char,
+            width: metrics.width,
+            ascent: metrics.actualBoundingBoxAscent || size * 0.72,
+            descent: metrics.actualBoundingBoxDescent || size * 0.2,
+          };
+        });
+        const totalWidth =
+          glyphs.reduce((sum, glyph) => sum + glyph.width, 0) +
+          Math.max(0, glyphs.length - 1) * spacing;
+        const maxAscent = Math.max(...glyphs.map((glyph) => glyph.ascent));
+        const maxDescent = Math.max(...glyphs.map((glyph) => glyph.descent));
+        return { glyphs, totalWidth, maxAscent, maxDescent };
+      }
+
+      function sampleWordPoints(word, spacing = VISUALIZER_CONFIG.textSpacing) {
         textCtx.clearRect(0, 0, textCanvas.width, textCanvas.height);
         textCtx.fillStyle = "#000";
         textCtx.fillRect(0, 0, textCanvas.width, textCanvas.height);
-        textCtx.textAlign = "center";
-        textCtx.textBaseline = "middle";
+        textCtx.textAlign = "left";
+        textCtx.textBaseline = "alphabetic";
         textCtx.lineJoin = "round";
         textCtx.lineCap = "round";
 
-        let size = Math.min(300, textCanvas.width * 0.28);
         const displayWord = word.trim().toUpperCase();
-        while (size > 52) {
-          textCtx.font = `700 ${size}px Georgia`;
-          const glyphWidths = [...displayWord].map((char) => textCtx.measureText(char).width);
-          const totalWidth =
-            glyphWidths.reduce((sum, width) => sum + width, 0) +
-            Math.max(0, displayWord.length - 1) * spacing;
-          if (totalWidth <= textCanvas.width * 0.76) {
-            break;
-          }
+        let size = Math.min(280, textCanvas.width * 0.22);
+        let metrics = buildGlyphMetrics(displayWord, size, spacing);
+
+        while (
+          size > 46 &&
+          (metrics.totalWidth > textCanvas.width * 0.76 ||
+            metrics.maxAscent + metrics.maxDescent > textCanvas.height * 0.42)
+        ) {
           size -= 8;
+          metrics = buildGlyphMetrics(displayWord, size, spacing);
         }
 
         textCtx.lineWidth = Math.max(18, size * 0.09);
@@ -327,22 +330,23 @@
         textCtx.fillStyle = "#fff";
         textCtx.font = `700 ${size}px Georgia`;
 
-        const glyphWidths = [...displayWord].map((char) => textCtx.measureText(char).width);
-        const totalWidth =
-          glyphWidths.reduce((sum, width) => sum + width, 0) +
-          Math.max(0, displayWord.length - 1) * spacing;
-        let cursor = textCanvas.width / 2 - totalWidth / 2;
-        [...displayWord].forEach((char, index) => {
-          const charWidth = glyphWidths[index];
-          const centerX = cursor + charWidth / 2;
-          textCtx.strokeText(char, centerX, textCanvas.height * 0.56);
-          textCtx.fillText(char, centerX, textCanvas.height * 0.56);
-          cursor += charWidth + spacing;
+        const startX = (textCanvas.width - metrics.totalWidth) * 0.5;
+        const baselineY =
+          textCanvas.height * 0.52 +
+          (metrics.maxAscent - metrics.maxDescent) * 0.5 +
+          VISUALIZER_CONFIG.textVerticalNudge;
+
+        let cursor = startX;
+        metrics.glyphs.forEach((glyph, index) => {
+          textCtx.strokeText(glyph.char, cursor, baselineY);
+          textCtx.fillText(glyph.char, cursor, baselineY);
+          cursor += glyph.width + (index < metrics.glyphs.length - 1 ? spacing : 0);
         });
 
         const imageData = textCtx.getImageData(0, 0, textCanvas.width, textCanvas.height).data;
         const points = [];
-        const step = displayWord.length >= 10 ? 4 : displayWord.length >= 6 ? 5 : 6;
+        const step =
+          displayWord.length >= 10 ? 4 : displayWord.length >= 6 ? 5 : 6;
         const neighborStride = Math.max(2, Math.floor(step * 0.75));
 
         for (let y = 0; y < textCanvas.height; y += step) {
@@ -415,7 +419,7 @@
           return { points: [], energy: 0 };
         }
 
-        const density = 3600;
+        const density = VISUALIZER_CONFIG.pointCount;
         const leftChannel = state.audioBuffer.getChannelData(0);
         const rightChannel =
           state.audioBuffer.numberOfChannels > 1
@@ -446,13 +450,14 @@
         };
       }
 
-      function drawScene(snapshot) {
+      function drawIdleScene() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-        gradient.addColorStop(0, "#0e0e12");
-        gradient.addColorStop(1, "#09090c");
-        ctx.fillStyle = gradient;
+        ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--page").trim();
         ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
+
+      function drawScene(snapshot) {
+        drawIdleScene();
 
         const points = snapshot.points;
         if (points.length === 0) {
@@ -460,21 +465,21 @@
         }
 
         const centerX = canvas.width * (0.5 + VISUALIZER_CONFIG.offsetX);
-        const centerY = canvas.height * (0.5 + VISUALIZER_CONFIG.offsetY);
-        const radius = Math.min(canvas.width, canvas.height) * 0.39 * VISUALIZER_CONFIG.radiusScale;
+        const centerY = canvas.height * (0.48 + VISUALIZER_CONFIG.offsetY);
+        const radius = Math.min(canvas.width, canvas.height) * 0.34 * VISUALIZER_CONFIG.radiusScale;
 
         ctx.save();
         ctx.translate(centerX, centerY);
-        ctx.shadowBlur = 14;
-        ctx.shadowColor = "rgba(241, 241, 236, 0.3)";
-        ctx.fillStyle = `rgba(241, 241, 236, ${0.58 + snapshot.energy * 0.18})`;
+        ctx.shadowBlur = 18;
+        ctx.shadowColor = getComputedStyle(document.documentElement).getPropertyValue("--scope-glow").trim();
+        ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--scope").trim();
 
         for (let index = 0; index < points.length; index += 1) {
           const point = points[index];
           const size =
             VISUALIZER_CONFIG.pointSizeBase +
-            point.coreStrength * 1.45 +
-            snapshot.energy * (VISUALIZER_CONFIG.pointSizeEnergyBoost + (1 - point.coreStrength) * 0.45);
+            point.coreStrength * 1.15 +
+            snapshot.energy * (VISUALIZER_CONFIG.pointSizeEnergyBoost + (1 - point.coreStrength) * 0.42);
           ctx.beginPath();
           ctx.arc(point.left * radius, -point.right * radius, size, 0, Math.PI * 2);
           ctx.fill();
@@ -490,9 +495,12 @@
         }
 
         state.lastRenderTime = timestamp;
-        const snapshot = getVectorSnapshot();
-        drawScene(snapshot);
-        timeText.textContent = `${formatTime(audioPlayer.currentTime)} / ${formatTime(audioPlayer.duration)}`;
+        if (state.activeIndex === -1 || !state.audioBuffer) {
+          drawIdleScene();
+        } else {
+          const snapshot = getVectorSnapshot();
+          drawScene(snapshot);
+        }
 
         if (state.isRendering) {
           state.rafId = requestAnimationFrame(renderFrame);
@@ -519,6 +527,7 @@
       function updateButtons() {
         trackList.querySelectorAll(".track-button").forEach((button, index) => {
           button.classList.toggle("is-active", index === state.activeIndex);
+          button.classList.toggle("is-idle", state.activeIndex === -1);
         });
       }
 
@@ -530,7 +539,6 @@
           const resolvedUrl = new URL(track.src, window.location.href).href;
 
           if (audioPlayer.src !== resolvedUrl) {
-            setStatus(`Loading ${track.title}...`);
             audioPlayer.pause();
             audioPlayer.src = resolvedUrl;
             const decodePromise = decodeTrack(resolvedUrl);
@@ -543,12 +551,8 @@
           updateButtons();
           await audioPlayer.play();
           startRendering();
-          setStatus(`Playing ${track.title}`);
         } catch (error) {
           console.error(error);
-          setStatus(
-            "Audio could not be loaded. On GitHub Pages, use real file URLs in this repo or another public host.",
-          );
         }
       }
 
@@ -556,7 +560,7 @@
         EMBED_TRACKS.forEach((track, index) => {
           const button = document.createElement("button");
           button.type = "button";
-          button.className = "track-button";
+          button.className = "track-button is-idle";
           button.textContent = track.title;
           button.addEventListener("click", async () => {
             if (state.activeIndex === index && !audioPlayer.paused) {
@@ -569,10 +573,8 @@
                 await audioContext.resume();
                 await audioPlayer.play();
                 startRendering();
-                setStatus(`Playing ${track.title}`);
               } catch (error) {
                 console.error(error);
-                setStatus("Playback could not resume.");
               }
               return;
             }
@@ -587,7 +589,6 @@
         if (!audioPlayer.ended) {
           stopRendering();
           renderFrame();
-          setStatus("Paused.");
         }
       });
 
@@ -598,12 +599,16 @@
       audioPlayer.addEventListener("ended", () => {
         stopRendering();
         renderFrame();
-        setStatus("Choose a track.");
+      });
+
+      window.addEventListener("resize", () => {
+        resizeCanvases();
+        renderFrame();
       });
 
       resizeCanvases();
       buildButtons();
-      renderFrame();
+      drawIdleScene();
     </script>
   </body>
 </html>
